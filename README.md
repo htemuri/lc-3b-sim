@@ -7,14 +7,14 @@ The goal for this project is to learn how CPU microarchitecture while abstractin
 
 > Adding to this list as I go
 
-- [ ] Create building blocks
+- [ ] Build data path
+  - [x] Adder
   - [x] ALU
   - [x] Register Interface
   - [x] Register File
   - [x] Memory
+  - [ ] Special registers
   - [ ] Bit shifter
   - [ ] Multiplexers
   - [ ] Sign extender
-  - [ ] Adder
-- [ ] Build data path
 - [ ] Build control logic
