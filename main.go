@@ -93,3 +93,26 @@ func (rf *RegisterFile) Commit() {
 		rf.pendingWrite = false
 	}
 }
+
+type DataSize uint8
+
+const (
+	WORD DataSize = iota
+	BYTE
+)
+
+type Memory struct {
+	mem [65536]uint8 // 2**16 addresses with 8 bit addressability. words are 16bits and are aligned if their addresses differ only in bit [0]
+
+	pendingWrite bool
+	dataSize     DataSize
+	writeEnable1 bool
+	writeEnable2 bool
+	writeDate    uint16
+}
+
+func (m *Memory) Read(
+	address uint16,
+) uint8 {
+	return 0
+}
