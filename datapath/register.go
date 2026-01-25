@@ -1,7 +1,5 @@
 package datapath
 
-import "lc3b-sim/m/v2/control"
-
 // general purpose registers - 8x16 bit
 
 type GPRegister uint8
@@ -37,7 +35,7 @@ func (rf *RegisterFile) Read(
 }
 
 func (rf *RegisterFile) Write(
-	ldREG control.LD_REG,
+	ldREG bool,
 	dr GPRegister,
 	data uint16,
 ) {
@@ -55,50 +53,64 @@ func (rf *RegisterFile) Commit() {
 	}
 }
 
-type PC struct {
-	value    uint16
-	pending  bool
-	newValue uint16
-}
-
-func (pc *PC) GetPC() uint16 {
-	return pc.value
-}
-
-func (pc *PC) UpdatePC(ldPC control.LD_PC, address uint16) {
-	if ldPC {
-		pc.newValue = address
-		pc.pending = true
-	}
-}
-
-func (pc *PC) Commit() {
-	if pc.pending {
-		pc.value = pc.newValue
-		pc.pending = false
-	}
-}
-
-type MAR struct {
+// generic 16 bit register
+type Register16bit struct {
 	value        uint16
-	nextValue    uint16
 	pendingWrite bool
+	newValue     uint16
 }
 
-func (m *MAR) GetMAR() uint16 {
-	return m.value
+func (r *Register16bit) GetValue() uint16 {
+	return r.value
 }
 
-func (m *MAR) UpdateMAR(ldMAR control.LD_MAR, address uint16) {
-	if ldMAR {
-		m.nextValue = address
-		m.pendingWrite = true
+func (r *Register16bit) UpdateValue(
+	loadSignal bool,
+	value uint16,
+) {
+	if loadSignal {
+		r.pendingWrite = true
+		r.newValue = value
 	}
 }
 
-func (m *MAR) Commit() {
-	if m.pendingWrite {
-		m.value = m.nextValue
-		m.pendingWrite = false
+func (r *Register16bit) Commit() {
+	if r.pendingWrite {
+		r.value = r.newValue
+		r.pendingWrite = false
+	}
+}
+
+type ConditionalCodes struct {
+	N bool
+	Z bool
+	P bool
+
+	pendingUpdate bool
+	newN          bool
+	newZ          bool
+	newP          bool
+}
+
+func (cc *ConditionalCodes) SetCC(loadCC bool, drValue uint16) {
+	if loadCC {
+		cc.newN, cc.newZ, cc.newP = false, false, false
+		if (drValue >> 15) == 1 { // assuming 2s complement form for values, if most sig bit is 1, then its neg
+			cc.newN = true
+		} else if drValue == 0 {
+			cc.newZ = true
+		} else {
+			cc.newP = true
+		}
+		cc.pendingUpdate = true
+	}
+}
+
+func (cc *ConditionalCodes) Commit() {
+	if cc.pendingUpdate {
+		cc.N = cc.newN
+		cc.Z = cc.newZ
+		cc.P = cc.newP
+		cc.pendingUpdate = false
 	}
 }

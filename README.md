@@ -13,8 +13,10 @@ The goal for this project is to learn how CPU microarchitecture while abstractin
   - [x] Register Interface
   - [x] Register File
   - [x] Memory
-  - [ ] Special registers
-  - [ ] Bit shifter
-  - [ ] Multiplexers
-  - [ ] Sign extender
+  - [x] Special registers
+  - [x] Bit shifter
+  - [x] Multiplexers
+  - [x] Sign extender
 - [ ] Build control logic
+
+![alt text](image.png)

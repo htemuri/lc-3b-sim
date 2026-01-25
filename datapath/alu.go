@@ -13,7 +13,7 @@ func ALU(
 		return a & b
 	case control.ALU_XOR:
 		return a ^ b
-	case control.ALU_PASS:
+	case control.ALU_PASSA:
 		return a
 	default:
 		panic("invalid ALU operation")
