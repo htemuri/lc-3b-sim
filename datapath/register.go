@@ -54,3 +54,51 @@ func (rf *RegisterFile) Commit() {
 		rf.pendingWrite = false
 	}
 }
+
+type PC struct {
+	value    uint16
+	pending  bool
+	newValue uint16
+}
+
+func (pc *PC) GetPC() uint16 {
+	return pc.value
+}
+
+func (pc *PC) UpdatePC(ldPC control.LD_PC, address uint16) {
+	if ldPC {
+		pc.newValue = address
+		pc.pending = true
+	}
+}
+
+func (pc *PC) Commit() {
+	if pc.pending {
+		pc.value = pc.newValue
+		pc.pending = false
+	}
+}
+
+type MAR struct {
+	value        uint16
+	nextValue    uint16
+	pendingWrite bool
+}
+
+func (m *MAR) GetMAR() uint16 {
+	return m.value
+}
+
+func (m *MAR) UpdateMAR(ldMAR control.LD_MAR, address uint16) {
+	if ldMAR {
+		m.nextValue = address
+		m.pendingWrite = true
+	}
+}
+
+func (m *MAR) Commit() {
+	if m.pendingWrite {
+		m.value = m.nextValue
+		m.pendingWrite = false
+	}
+}
