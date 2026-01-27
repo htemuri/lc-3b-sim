@@ -7,7 +7,7 @@ The goal for this project is to learn how CPU microarchitecture while abstractin
 
 > Adding to this list as I go
 
-- [ ] Build data path
+- [x] Build data path
   - [x] Adder
   - [x] ALU
   - [x] Register Interface
@@ -19,4 +19,6 @@ The goal for this project is to learn how CPU microarchitecture while abstractin
   - [x] Sign extender
 - [ ] Build control logic
 
-![alt text](image.png)
+
+## LC-3b Microarchitecture 
+![Diagram of an lc3b microarchitecture datapath](public/lc3b-microarch.png)
