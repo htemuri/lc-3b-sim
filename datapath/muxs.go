@@ -29,7 +29,7 @@ func SR2Mux(controlSig control.SR2Mux, irInput, sr2outInput uint16) uint16 {
 }
 
 func MARMux(marMux control.MARMUX, seven0Input uint8, adderInput uint16) uint16 {
-	if marMux == control.MARMUX_SevenPoint0 {
+	if marMux == control.MARMUX_7_0 {
 		return uint16(seven0Input)
 	} else {
 		return adderInput

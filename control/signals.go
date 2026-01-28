@@ -76,15 +76,15 @@ const (
 type DRMUX uint8
 
 const (
-	DRMUX_ElevenPoint9 DRMUX = iota
+	DRMUX_11_9 DRMUX = iota
 	DRMUX_R7
 )
 
 type SR1MUX uint8
 
 const (
-	SR1MUX_ElevenPoint9 SR1MUX = iota
-	SR1MUX_EightPoint6
+	SR1MUX_11_9 SR1MUX = iota
+	SR1MUX_8_6
 )
 
 type ADDR1MUX uint8
@@ -106,7 +106,7 @@ const (
 type MARMUX uint8
 
 const (
-	MARMUX_SevenPoint0 MARMUX = iota
+	MARMUX_7_0 MARMUX = iota
 	MARMUX_ADDER
 )
 
