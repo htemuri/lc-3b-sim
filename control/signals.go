@@ -53,8 +53,8 @@ const (
 type DataSize uint8
 
 const (
-	WORD DataSize = iota
-	BYTE
+	BYTE DataSize = iota
+	WORD
 )
 
 type ALUOp uint8

@@ -18,7 +18,13 @@ The goal for this project is to learn how CPU microarchitecture while abstractin
   - [x] Multiplexers
   - [x] Sign extender
 - [ ] Build control logic
+  - [x] Microcode in the form of the control store
+  - [ ] Microsequencer
 
 
 ## LC-3b Microarchitecture 
 ![Diagram of an lc3b microarchitecture datapath](public/lc3b-microarch.png)
+
+
+## LC-3b Finite State Machine
+![Diagram of the lc3b finite state machine](public/lc3b-fsm.png)
