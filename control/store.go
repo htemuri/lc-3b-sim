@@ -26,7 +26,7 @@ type ControlStoreOutput struct {
 }
 
 // control store should be 35 bits x 2**6 (possible state combinations)
-var store map[int]ControlStoreOutput = map[int]ControlStoreOutput{
+var store map[uint8]ControlStoreOutput = map[uint8]ControlStoreOutput{
 	0:  {COND: COND_BRANCH, J: 18},
 	1:  {J: 18, DatapathSignals: Signals{aluK: ALU_ADD, sr1MUX: SR1MUX_8_6, ldCC: LoadSig_LOAD, ldREG: LoadSig_LOAD, gateALU: NoYesSig_YES}},
 	2:  {J: 29, DatapathSignals: Signals{sr1MUX: SR1MUX_8_6, addr2MUX: ADDR2MUX_offset6, marMUX: MARMUX_ADDER, addr1MUX: ADDR1MUX_BaseR, ldMAR: LoadSig_LOAD, gateMARMUX: NoYesSig_YES}},
@@ -63,9 +63,13 @@ var store map[int]ControlStoreOutput = map[int]ControlStoreOutput{
 	33: {COND: COND_MEMREADY, J: 35, DatapathSignals: Signals{rw: RW_RD, dataSize: WORD, mioEN: NoYesSig_YES, ldMDR: LoadSig_LOAD}},
 	34: {},
 	35: {J: 32, DatapathSignals: Signals{dataSize: WORD, gateMDR: NoYesSig_YES, ldIR: LoadSig_LOAD}},
+	// initing 36..64 to prevent out of bounds state index
+	36: {}, 37: {}, 38: {}, 39: {}, 40: {}, 41: {}, 42: {}, 43: {}, 44: {}, 45: {}, 46: {}, 47: {}, 48: {}, 49: {}, 50: {}, 51: {}, 52: {},
+	53: {}, 54: {}, 55: {}, 56: {}, 57: {}, 58: {}, 59: {}, 60: {}, 61: {}, 62: {}, 63: {},
 }
 
 func ControlStore(state uint8) ControlStoreOutput {
-
-	return ControlStoreOutput{}
+	// state should max be 6 bits so going to remove top 2 bits from var
+	state = (state << 2) >> 2
+	return store[state] // max state can be is 2**6 - 1 = 63
 }
