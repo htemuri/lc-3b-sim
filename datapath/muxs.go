@@ -19,16 +19,16 @@ func PCMux(PCMux2 control.PCMux2, busInput, adderInput, pcPlus2Input uint16) uin
 
 func SR2Mux(controlSig control.SR2Mux, irInput, sr2outInput uint16) uint16 {
 	switch controlSig {
-	case control.IR:
+	case control.SR2Mux_IR:
 		return irInput
-	case control.SR2OUT:
+	case control.SR2Mux_SR2OUT:
 		return sr2outInput
 	default:
 		panic("invalid control signal")
 	}
 }
 
-func MARMux(marMux control.MARMUX, seven0Input uint8, adderInput uint16) uint16 {
+func MARMux(marMux control.MARMUX, seven0Input uint16, adderInput uint16) uint16 {
 	if marMux == control.MARMUX_7_0 {
 		return uint16(seven0Input)
 	} else {

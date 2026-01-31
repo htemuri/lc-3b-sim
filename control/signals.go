@@ -1,31 +1,31 @@
 package control
 
 type Signals struct {
-	ldREG LoadSig
-	ldCC  LoadSig
-	ldPC  LoadSig
-	ldIR  LoadSig
-	ldMAR LoadSig
-	ldMDR LoadSig
-	ldBEN LoadSig
+	LdREG LoadSig
+	LdCC  LoadSig
+	LdPC  LoadSig
+	LdIR  LoadSig
+	LdMAR LoadSig
+	LdMDR LoadSig
+	LdBEN LoadSig
 
-	gatePC     NoYesSig
-	gateMDR    NoYesSig
-	gateALU    NoYesSig
-	gateMARMUX NoYesSig
-	gateSHF    NoYesSig
+	GatePC     NoYesSig
+	GateMDR    NoYesSig
+	GateALU    NoYesSig
+	GateMARMUX NoYesSig
+	GateSHF    NoYesSig
 
-	pcMUX    PCMux2
-	drMUX    DRMUX
-	sr1MUX   SR1MUX
-	addr1MUX ADDR1MUX
-	addr2MUX ADDR2MUX
-	marMUX   MARMUX
-	aluK     ALUOp
-	mioEN    NoYesSig
-	rw       RW
-	dataSize DataSize
-	lshf1    NoYesSig
+	PcMUX    PCMux2
+	DrMUX    DRMUX
+	Sr1MUX   SR1MUX
+	Addr1MUX ADDR1MUX
+	Addr2MUX ADDR2MUX
+	MarMUX   MARMUX
+	AluK     ALUOp
+	MioEN    NoYesSig
+	Rw       RW
+	DataSize DataSize
+	Lshf1    NoYesSig
 }
 
 type LoadSig bool
@@ -66,11 +66,11 @@ const (
 	ALU_PASSA
 )
 
-type SR2Mux uint8
+type SR2Mux bool
 
 const (
-	IR SR2Mux = iota
-	SR2OUT
+	SR2Mux_SR2OUT SR2Mux = false
+	SR2Mux_IR
 )
 
 type DRMUX uint8

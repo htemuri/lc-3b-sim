@@ -17,9 +17,9 @@ The goal for this project is to learn how CPU microarchitecture while abstractin
   - [x] Bit shifter
   - [x] Multiplexers
   - [x] Sign extender
-- [ ] Build control logic
+- [x] Build control logic
   - [x] Microcode in the form of the control store
-  - [ ] Microsequencer
+  - [x] Microsequencer
 
 
 ## LC-3b Microarchitecture 

@@ -1,4 +1,0 @@
-package cpu
-
-func run() {
-}
