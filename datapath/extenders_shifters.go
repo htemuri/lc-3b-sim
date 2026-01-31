@@ -28,3 +28,22 @@ func SEXT(input uint16) uint16 { // extend most sig bit of input till 16th bit o
 	}
 	return 0
 }
+
+func SHF(sr1 uint16, op uint8) uint16 {
+	amount := (op << 4) >> 4
+	if 0b00010000&op == 0b00000000 { // if bit 4 == 0 then shift left
+		// lshift sr1 by first 4 bits amount
+		return sr1 << amount
+	} else {
+		if 0b00100000&op == 0 { // if bit 5 == 1 then arithmetic shift right
+			// logical right shift sr1 by first 4 bits amount
+			return sr1 >> amount
+		} else {
+			// arithmetic right shift sr1 by first 4 bits amount
+			bit15 := sr1 >> 15
+			var appendMask uint16 = ((bit15 * 0b1111111111111111) >> (16 - amount)) << (16 - amount)
+			return (sr1 >> amount) | appendMask
+
+		}
+	}
+}

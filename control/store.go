@@ -1,6 +1,13 @@
 package control
 
-// control store should be 35 bits x 2**6 (possible state combinations)
+// The control store is basically taking the finite state machine which you can see in the README
+// and converting it to the signals needed in the datapath to accomplish the state and move on.
+// So for ex, if i'm on state 1...
+//			- I need to do a microoperation which is adding sr1 + op2 and storing it in the dest register.
+// 			  To do that, i need to set my alu control signal to add, select which bits from the instruction are
+// 			  my sr1, and set the load signals for the registers im writing to. I also enable the tristate buffer
+// 			  that allows my alu output to flow through the bus to my dest register and to my conditional code registers (n,z,p).
+// 			- I set the `J` value to 18 to declare that once I finish my microoperation, I should move to state 18
 
 type Condition uint8
 
@@ -18,6 +25,7 @@ type ControlStoreOutput struct {
 	DatapathSignals Signals
 }
 
+// control store should be 35 bits x 2**6 (possible state combinations)
 var store map[int]ControlStoreOutput = map[int]ControlStoreOutput{
 	0:  {COND: COND_BRANCH, J: 18},
 	1:  {J: 18, DatapathSignals: Signals{aluK: ALU_ADD, sr1MUX: SR1MUX_8_6, ldCC: LoadSig_LOAD, ldREG: LoadSig_LOAD, gateALU: NoYesSig_YES}},
@@ -35,8 +43,8 @@ var store map[int]ControlStoreOutput = map[int]ControlStoreOutput{
 	13: {J: 18, DatapathSignals: Signals{sr1MUX: SR1MUX_8_6, ldREG: LoadSig_LOAD, gateSHF: NoYesSig_YES, ldCC: LoadSig_LOAD}},
 	14: {J: 18, DatapathSignals: Signals{addr1MUX: ADDR1MUX_PC, addr2MUX: ADDR2MUX_PCoffset9, lshf1: NoYesSig_YES, marMUX: MARMUX_ADDER, ldREG: LoadSig_LOAD, ldCC: LoadSig_LOAD, gateMARMUX: NoYesSig_YES}},
 	15: {J: 28, DatapathSignals: Signals{marMUX: MARMUX_7_0, ldMAR: LoadSig_LOAD, gateMARMUX: NoYesSig_YES}},
-	16: {COND: COND_MEMREADY, J: 16, DatapathSignals: Signals{rw: RW_WR, dataSize: WORD, mioEN: NoYesSig_YES}},
-	17: {COND: COND_MEMREADY, J: 17, DatapathSignals: Signals{rw: RW_WR, mioEN: NoYesSig_YES, dataSize: BYTE}},
+	16: {COND: COND_MEMREADY, J: 18, DatapathSignals: Signals{rw: RW_WR, dataSize: WORD, mioEN: NoYesSig_YES}},
+	17: {COND: COND_MEMREADY, J: 19, DatapathSignals: Signals{rw: RW_WR, mioEN: NoYesSig_YES, dataSize: BYTE}},
 	18: {J: 33, DatapathSignals: Signals{gatePC: NoYesSig_YES, ldMAR: LoadSig_LOAD, pcMUX: PCPLUS2, ldPC: LoadSig_LOAD}},
 	19: {J: 33, DatapathSignals: Signals{gatePC: NoYesSig_YES, ldMAR: LoadSig_LOAD, pcMUX: PCPLUS2, ldPC: LoadSig_LOAD}},
 	20: {J: 18, DatapathSignals: Signals{drMUX: DRMUX_R7, gatePC: NoYesSig_YES, ldREG: LoadSig_LOAD, sr1MUX: SR1MUX_8_6, addr1MUX: ADDR1MUX_BaseR, pcMUX: ADDER, ldPC: LoadSig_LOAD}},
