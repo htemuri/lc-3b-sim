@@ -2,6 +2,7 @@ package datapath
 
 import (
 	"lc3b-sim/m/v2/control"
+	"log"
 )
 
 // general purpose registers - 8x16 bit
@@ -39,11 +40,11 @@ func (rf *RegisterFile) Read(
 }
 
 func (rf *RegisterFile) Write(
-	ldREG bool,
+	ldREG control.LoadSig,
 	dr gpRegister,
 	data uint16,
 ) {
-	if ldREG {
+	if ldREG == control.LoadSig_LOAD {
 		rf.pendingWrite = true
 		rf.writeData = data
 		rf.writeReg = dr
@@ -55,6 +56,14 @@ func (rf *RegisterFile) Commit() {
 		rf.regs[rf.writeReg] = rf.writeData
 		rf.pendingWrite = false
 	}
+}
+
+func (rf *RegisterFile) PrintValues() {
+	log.Println("REGISTER FILE: ", rf.regs)
+}
+
+func GetSR2Input(fullIR uint16) gpRegister {
+	return gpRegister(fullIR & 0b111)
 }
 
 // generic 16 bit register
@@ -96,8 +105,8 @@ type ConditionalCodes struct {
 	newP          bool
 }
 
-func (cc *ConditionalCodes) SetCC(loadCC bool, drValue uint16) {
-	if loadCC {
+func (cc *ConditionalCodes) SetCC(loadCC control.LoadSig, drValue uint16) {
+	if loadCC == control.LoadSig_LOAD {
 		cc.newN, cc.newZ, cc.newP = false, false, false
 		if (drValue >> 15) == 1 { // assuming 2s complement form for values, if most sig bit is 1, then its neg
 			cc.newN = true

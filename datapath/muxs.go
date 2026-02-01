@@ -17,6 +17,14 @@ func PCMux(PCMux2 control.PCMux2, busInput, adderInput, pcPlus2Input uint16) uin
 	}
 }
 
+func SR1Mux(controlSig control.SR1MUX, irInput11_9, irInput8_6 uint8) gpRegister {
+	if controlSig == control.SR1MUX_11_9 {
+		return gpRegister(irInput11_9 & 0b111)
+	} else {
+		return gpRegister(irInput8_6 & 0b111)
+	}
+}
+
 func SR2Mux(controlSig control.SR2Mux, irInput, sr2outInput uint16) uint16 {
 	switch controlSig {
 	case control.SR2Mux_IR:
@@ -59,10 +67,18 @@ func Addr2Mux(addr2Mux control.ADDR2MUX, top11Input, top9Input, top6Input uint16
 	}
 }
 
-func MioENMux(mioEN control.NoYesSig, memoryInput, mioInput uint16) uint16 {
-	if mioEN == control.NoYesSig_NO {
-		return memoryInput
+func DrMux(drMuxSig control.DRMUX, irInput11_9 uint8) gpRegister {
+	if drMuxSig == control.DRMUX_11_9 {
+		return gpRegister(irInput11_9)
 	} else {
-		return mioInput
+		return gpRegister(0b111)
+	}
+}
+
+func MioENMux(mioEN control.NoYesSig, busInput, memoryInput uint16) uint16 {
+	if mioEN == control.NoYesSig_NO {
+		return busInput
+	} else {
+		return memoryInput
 	}
 }

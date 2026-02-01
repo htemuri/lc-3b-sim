@@ -1,5 +1,7 @@
 package datapath
 
+import "log"
+
 const MEMORY_READ_LATENCY = 2  // in clock cycles
 const MEMORY_WRITE_LATENCY = 5 // in clock cycles
 
@@ -8,11 +10,11 @@ type Memory struct {
 
 	mar uint16 // memory address register
 
-	ready bool // memory ready signal
+	Ready bool // memory ready signal
 
 	pendingRead bool
 	readCycles  uint8 // simulated latency for reads
-	dataOut     uint16
+	DataOut     uint16
 
 	pendingWrite bool
 	writeCycles  uint8 // simulated latency for writes
@@ -21,25 +23,36 @@ type Memory struct {
 	writeData    uint16
 }
 
-func (m *Memory) Read() {
+func (m *Memory) Init(data [65536]uint8) {
+	m.mem = data
+}
+
+func (m *Memory) Read(mar uint16) {
 	if m.pendingRead {
-		panic("already pending read")
+		log.Printf("already pending read")
 	}
 	m.pendingRead = true
+	m.mar = mar
 	m.readCycles = MEMORY_READ_LATENCY
-	m.ready = false
+	m.Ready = false
 }
 
 func (m *Memory) Write(
+	mar uint16,
 	mdr uint16,
+	writeEnable0,
+	writeEnable1 bool,
 ) {
 	if m.pendingWrite {
-		panic("already pending write")
+		log.Printf("already pending write")
 	}
 	m.pendingWrite = true
+	m.mar = mar
 	m.writeCycles = MEMORY_WRITE_LATENCY
 	m.writeData = mdr
-	m.ready = false
+	m.Ready = false
+	m.writeEnable0 = writeEnable0
+	m.writeEnable1 = writeEnable1
 }
 
 func (m *Memory) Commit() {
@@ -47,9 +60,9 @@ func (m *Memory) Commit() {
 		if m.readCycles > 0 {
 			m.readCycles--
 		} else {
-			m.dataOut = uint16(m.mem[m.mar+1])<<8 | uint16(m.mem[m.mar])
+			m.DataOut = uint16(m.mem[m.mar+1])<<8 | uint16(m.mem[m.mar])
 			m.pendingRead = false
-			m.ready = true
+			m.Ready = true
 		}
 	}
 	if m.pendingWrite {
@@ -66,7 +79,7 @@ func (m *Memory) Commit() {
 				m.mem[m.mar] = uint8(m.writeData)
 			}
 			m.pendingWrite = false
-			m.ready = true
+			m.Ready = true
 		}
 	}
 }
