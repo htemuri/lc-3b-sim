@@ -23,13 +23,17 @@ type Memory struct {
 	writeData    uint16
 }
 
+func (m *Memory) PrintMem(index uint32) {
+	log.Printf("Memory value at 0x%x: %d", index, m.mem[index])
+}
+
 func (m *Memory) Init(data [65536]uint8) {
 	m.mem = data
 }
 
 func (m *Memory) Read(mar uint16) {
 	if m.pendingRead {
-		log.Printf("already pending read")
+		return
 	}
 	m.pendingRead = true
 	m.mar = mar
@@ -44,7 +48,7 @@ func (m *Memory) Write(
 	writeEnable1 bool,
 ) {
 	if m.pendingWrite {
-		log.Printf("already pending write")
+		return
 	}
 	m.pendingWrite = true
 	m.mar = mar

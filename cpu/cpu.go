@@ -37,13 +37,14 @@ func (cpu *CPU) Init(pcStart uint16, programData [65536]uint8) {
 
 func (cpu *CPU) Tick() {
 	log.Println("STATE: ", cpu.state)
+	log.Printf("PC: 0x%x", cpu.pc.GetValue())
 	controlStoreOut := control.ControlStore(cpu.state)
 	signals := controlStoreOut.DatapathSignals
 
 	cpu.computeCombinationalLogic(signals)
 	cpu.bus = cpu.computeBus(signals)
-	log.Printf("BUS value: %016b", cpu.bus)
-	log.Printf("IR value: %016b", cpu.ir.GetValue())
+	log.Printf("BUS value: 0x%x", cpu.bus)
+	log.Printf("IR value: 0x%x", cpu.ir.GetValue())
 	cpu.updateRegisters(signals)
 	cpu.updateMemory(signals)
 
@@ -59,6 +60,8 @@ func (cpu *CPU) Tick() {
 	// calculate new state
 
 	ir15to11 := uint8((cpu.ir.GetValue() >> 11)) & 0b11111
+	log.Println("Memory state: ", cpu.memory.Ready)
+	cpu.memory.PrintMem(0x2)
 	cpu.state = control.Microsequencer(controlStoreOut.COND, cpu.calculateBen(), cpu.memory.Ready, ir15to11, controlStoreOut.J, controlStoreOut.IRD)
 }
 
@@ -110,10 +113,14 @@ func (cpu *CPU) computeBus(signals control.Signals) uint16 {
 	}
 
 	if signals.GateALU == control.NoYesSig_YES {
+		// log.Println("ALU Gate opened")
 		enabledCounter += 1
 		sr1 := cpu.registerFile.Sr1Out
-		sr2 := datapath.SR2Mux(control.SR2Mux(0b100000&ir == 1), 0b11111&ir, cpu.registerFile.Sr2Out)
+		sr2 := datapath.SR2Mux(control.SR2Mux(0b100000&ir>>5 == 1), 0b11111&ir, cpu.registerFile.Sr2Out)
+		// log.Println("SR2: ", sr2)
+		// log.Println("ALUK: ", signals.AluK)
 		bus = datapath.ALU(signals.AluK, sr1, sr2)
+		log.Println("Calculated BUS: ", bus)
 	}
 
 	if signals.GateMARMUX == control.NoYesSig_YES {

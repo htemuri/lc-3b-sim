@@ -70,7 +70,7 @@ type SR2Mux bool
 
 const (
 	SR2Mux_SR2OUT SR2Mux = false
-	SR2Mux_IR
+	SR2Mux_IR     SR2Mux = true
 )
 
 type DRMUX uint8
