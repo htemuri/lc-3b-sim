@@ -2,7 +2,6 @@ package datapath
 
 import (
 	"lc3b-sim/m/v2/control"
-	"log"
 )
 
 // general purpose registers - 8x16 bit
@@ -58,8 +57,8 @@ func (rf *RegisterFile) Commit() {
 	}
 }
 
-func (rf *RegisterFile) PrintValues() {
-	log.Println("REGISTER FILE: ", rf.regs)
+func (rf *RegisterFile) GetRegisters() [8]uint16 {
+	return rf.regs
 }
 
 func GetSR2Input(fullIR uint16) gpRegister {

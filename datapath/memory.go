@@ -12,7 +12,7 @@ type Memory struct {
 
 	Ready bool // memory ready signal
 
-	pendingRead bool
+	PendingRead bool
 	readCycles  uint8 // simulated latency for reads
 	DataOut     uint16
 
@@ -32,10 +32,10 @@ func (m *Memory) Init(data [65536]uint8) {
 }
 
 func (m *Memory) Read(mar uint16) {
-	if m.pendingRead {
+	if m.PendingRead {
 		return
 	}
-	m.pendingRead = true
+	m.PendingRead = true
 	m.mar = mar
 	m.readCycles = MEMORY_READ_LATENCY
 	m.Ready = false
@@ -60,12 +60,12 @@ func (m *Memory) Write(
 }
 
 func (m *Memory) Commit() {
-	if m.pendingRead {
+	if m.PendingRead {
 		if m.readCycles > 0 {
 			m.readCycles--
 		} else {
 			m.DataOut = uint16(m.mem[m.mar+1])<<8 | uint16(m.mem[m.mar])
-			m.pendingRead = false
+			// m.PendingRead = false
 			m.Ready = true
 		}
 	}

@@ -1,5 +1,5 @@
 # lc-3b-sim
-Simulating a microarchitecture that satisfies the LC-3b ISA specification
+Simulating a microarchitecture that implements part of the LC-3b ISA specification
 
 The goal for this project is to learn how CPU microarchitecture while abstracting away transistor/latch/flip flop/logic gate design. 
 

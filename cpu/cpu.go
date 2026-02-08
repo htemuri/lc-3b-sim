@@ -1,9 +1,11 @@
 package cpu
 
 import (
+	"fmt"
 	"lc3b-sim/m/v2/control"
 	"lc3b-sim/m/v2/datapath"
 	"log"
+	"log/slog"
 )
 
 type CPU struct {
@@ -26,27 +28,69 @@ type CPU struct {
 
 	// temp vars so dont have to repeat ops
 	adderOutput uint16
+
+	halted bool // if we've hit the trap instruction
+
+	logger slog.Logger
 }
 
-func (cpu *CPU) Init(pcStart uint16, programData [65536]uint8) {
+func (cpu *CPU) Init(pcStart uint16, instructions []uint16, logger slog.Logger) {
+	cpu.logger = logger
 	cpu.state = 18
 	cpu.pc.UpdateValue(control.LoadSig_LOAD, pcStart)
 	cpu.pc.Commit()
-	cpu.memory.Init(programData)
+	var programMemory [65536]uint8
+	for i := 0; i < len(instructions)*2; i += 2 {
+		programMemory[pcStart+uint16(i)] = uint8(instructions[i/2])
+		programMemory[pcStart+uint16(i)+1] = uint8(instructions[i/2] >> 8)
+	}
+	cpu.memory.Init(programMemory)
+}
+
+func (cpu *CPU) Run() {
+	// i := 0
+	for !cpu.halted && cpu.pc.GetValue() < 0x301f {
+		cpu.Tick()
+		// cpu.PrintRegisterFile()
+		// log.Println("---------------------")
+		// fmt.Scanln()
+	}
 }
 
 func (cpu *CPU) Tick() {
-	log.Println("STATE: ", cpu.state)
-	log.Printf("PC: 0x%x", cpu.pc.GetValue())
+	cpu.memory.Commit()
+
+	if cpu.state == 18 || cpu.state == 19 {
+		// cpu.logger.Info(fmt.Sprintf("PC: %x", cpu.pc.GetValue()-2))
+		// // cpu.logger.Info(fmt.Sprintf("IR: %16b", cpu.ir.GetValue()))
+		// cpu.logger.Info(fmt.Sprintf("BEN: %v", cpu.calculateBen()))
+
+		cpu.logger.Info(fmt.Sprintf("R1: %d; R2: %d", int8(cpu.registerFile.GetRegisters()[1]), int8(cpu.registerFile.GetRegisters()[2])))
+		// cpu.logger.Info(fmt.Sprintf("Condition codes: N: %v, Z: %v, P: %v", cpu.conditionalCodes.N, cpu.conditionalCodes.Z, cpu.conditionalCodes.P))
+	}
+
+	// if cpu.state == 32 {
+	// 	cpu.logger.Info(fmt.Sprintf("IR: %16b", cpu.ir.GetValue()))
+	// }
+
+	// if cpu.state == 33 {
+	// 	cpu.logger.Info(fmt.Sprintf("MDR: %v", cpu.mdr))
+	// 	cpu.logger.Info(fmt.Sprintf("MEM: %v", cpu.memory.DataOut))
+
+	// }
+
+	if cpu.state == 30 {
+		cpu.logger.Info("Halting CPU due to TRAP instruction")
+		cpu.halted = true
+		return
+	}
 	controlStoreOut := control.ControlStore(cpu.state)
 	signals := controlStoreOut.DatapathSignals
 
 	cpu.computeCombinationalLogic(signals)
 	cpu.bus = cpu.computeBus(signals)
-	log.Printf("BUS value: 0x%x", cpu.bus)
-	log.Printf("IR value: 0x%x", cpu.ir.GetValue())
-	cpu.updateRegisters(signals)
 	cpu.updateMemory(signals)
+	cpu.updateRegisters(signals)
 
 	// clock edge commits
 	cpu.pc.Commit()
@@ -55,19 +99,18 @@ func (cpu *CPU) Tick() {
 	cpu.mar.Commit()
 	cpu.mdr.Commit()
 	cpu.conditionalCodes.Commit()
-	cpu.memory.Commit()
 
 	// calculate new state
 
 	ir15to11 := uint8((cpu.ir.GetValue() >> 11)) & 0b11111
-	log.Println("Memory state: ", cpu.memory.Ready)
-	cpu.memory.PrintMem(0x2)
 	cpu.state = control.Microsequencer(controlStoreOut.COND, cpu.calculateBen(), cpu.memory.Ready, ir15to11, controlStoreOut.J, controlStoreOut.IRD)
+	// cpu.logger.Info(fmt.Sprintf("New State: %d", cpu.state))
+
 }
 
-func (cpu *CPU) PrintRegisterFile() {
-	cpu.registerFile.PrintValues()
-}
+// func (cpu *CPU) PrintRegisterFile() {
+// 	cpu.registerFile.PrintValues()
+// }
 
 func (cpu *CPU) computeCombinationalLogic(signals control.Signals) {
 	ir := cpu.ir.GetValue()
@@ -79,7 +122,7 @@ func (cpu *CPU) computeCombinationalLogic(signals control.Signals) {
 	cpu.registerFile.Read(datapath.SR1Mux(signals.Sr1MUX, irInput11_9, irInput8_6), datapath.GetSR2Input(ir))
 
 	// adder
-	addr2muxOutput := datapath.Addr2Mux(signals.Addr2MUX, ir&0b1111111111, ir&0b111111111, ir&0b111111)
+	addr2muxOutput := datapath.Addr2Mux(signals.Addr2MUX, datapath.SEXT(ir&0b1111111111, 11), datapath.SEXT(ir&0b111111111, 9), datapath.SEXT(ir&0b111111, 6))
 	addr1muxOutput := datapath.Addr1Mux(signals.Addr1MUX, pc, cpu.registerFile.Sr1Out)
 	cpu.adderOutput = datapath.Adder(datapath.LSHF1(signals.Lshf1, addr2muxOutput), addr1muxOutput)
 
@@ -106,7 +149,7 @@ func (cpu *CPU) computeBus(signals control.Signals) uint16 {
 			} else {
 				bus = (mdr & 0b1111111100000000) >> 8 // bus = mdr[15:8]
 			}
-			bus = datapath.SEXT(bus) // sign extend if byte
+			bus = datapath.SEXT(bus, 8) // sign extend if byte
 		} else {
 			bus = mdr
 		}
@@ -116,7 +159,7 @@ func (cpu *CPU) computeBus(signals control.Signals) uint16 {
 		// log.Println("ALU Gate opened")
 		enabledCounter += 1
 		sr1 := cpu.registerFile.Sr1Out
-		sr2 := datapath.SR2Mux(control.SR2Mux(0b100000&ir>>5 == 1), 0b11111&ir, cpu.registerFile.Sr2Out)
+		sr2 := datapath.SR2Mux(control.SR2Mux(0b100000&ir>>5 == 1), datapath.SEXT(0b11111&ir, 5), cpu.registerFile.Sr2Out)
 		// log.Println("SR2: ", sr2)
 		// log.Println("ALUK: ", signals.AluK)
 		bus = datapath.ALU(signals.AluK, sr1, sr2)
@@ -158,7 +201,12 @@ func (cpu *CPU) updateRegisters(signals control.Signals) {
 	} else {
 		modifiedBus = cpu.bus
 	}
-	cpu.mdr.UpdateValue(signals.LdMDR, datapath.MioENMux(signals.MioEN, modifiedBus, cpu.memory.DataOut))
+	var memData uint16
+	if cpu.memory.Ready {
+		memData = cpu.memory.DataOut
+		cpu.memory.PendingRead = false
+	}
+	cpu.mdr.UpdateValue(signals.LdMDR, datapath.MioENMux(signals.MioEN, modifiedBus, memData))
 	irInput11_9 := uint8((cpu.ir.GetValue() >> 9)) & 0b111
 	cpu.registerFile.Write(signals.LdREG, datapath.DrMux(signals.DrMUX, irInput11_9), cpu.bus)
 }

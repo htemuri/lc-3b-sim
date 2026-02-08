@@ -16,17 +16,26 @@ func LSHF1(lshf1 control.NoYesSig, input uint16) uint16 {
 	}
 }
 
-func SEXT(input uint16) uint16 { // extend most sig bit of input till 16th bit of output (for ex: 110 -> 1111111111111110)
-	for i := 16; i > 0; i-- {
-		var bitmask uint16 = 1 << (i - 1)
-		if bitmask&input == bitmask {
-			// cant do arithmetic shift bc working with unsigned ints so will have to bitwise OR the bits
-			var extenders uint16 = 0b1111111111111111
-			extenders = (extenders >> i) << i
-			return extenders | input
-		}
+func SEXT(input uint16, numBits uint8) uint16 { // extend most sig bit of input till 16th bit of output (for ex: 110 -> 1111111111111110)
+
+	msb := 0b1 & (input >> (numBits - 1))
+	if msb == 1 {
+		var extenders uint16 = 0b1111111111111111
+		extenders = (extenders >> numBits) << numBits
+		return extenders | input
 	}
-	return 0
+	return uint16(input)
+
+	// for i := 16; i > 0; i-- {
+	// 	var bitmask uint16 = 1 << (i - 1)
+	// 	if bitmask&input == bitmask {
+	// 		// cant do arithmetic shift bc working with unsigned ints so will have to bitwise OR the bits
+	// 		var extenders uint16 = 0b1111111111111111
+	// 		extenders = (extenders >> i) << i
+	// 		return extenders | input
+	// 	}
+	// }
+	// return 0
 }
 
 func SHF(sr1 uint16, op uint8) uint16 {
