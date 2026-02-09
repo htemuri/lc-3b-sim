@@ -1,7 +1,6 @@
 package cpu
 
 import (
-	"fmt"
 	"lc3b-sim/m/v2/control"
 	"lc3b-sim/m/v2/datapath"
 	"log/slog"
@@ -45,7 +44,7 @@ func (cpu *CPU) Init(pcStart uint16, instructions []uint16, logger slog.Logger) 
 
 func (cpu *CPU) Run() {
 	cpu.profiler.StartTime = time.Now()
-	for !cpu.halted && cpu.pc.GetValue() < 0x301f {
+	for !cpu.halted {
 		cpu.Tick()
 		cpu.profiler.TotalCycles++
 	}
@@ -224,8 +223,6 @@ func (cpu *CPU) updateMemory(signals control.Signals) {
 			if !cpu.memory.PendingWrite {
 				cpu.profiler.MemWrites++
 			}
-			cpu.logger.Debug(fmt.Sprintf("MEMORY READY: %t", cpu.memory.Ready))
-			cpu.logger.Debug(fmt.Sprintf("Pending Write: %t", cpu.memory.PendingWrite))
 			cpu.memory.Write(mar, cpu.mdr.GetValue(), we0, we1)
 		} else {
 			if !cpu.memory.PendingRead {
