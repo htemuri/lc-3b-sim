@@ -4,16 +4,17 @@ import (
 	"fmt"
 	"lc3b-sim/m/v2/control"
 	"lc3b-sim/m/v2/datapath"
-	"log"
 	"log/slog"
+	"time"
 )
 
 type CPU struct {
+	state  uint8
+	bus    uint16
+	halted bool // if we've hit the trap instruction
 
-	// state
-	state uint8
-
-	bus uint16
+	logger   slog.Logger
+	profiler Profiler
 
 	// registers
 	pc               datapath.Register16bit
@@ -23,15 +24,10 @@ type CPU struct {
 	mdr              datapath.Register16bit
 	conditionalCodes datapath.ConditionalCodes
 
-	// memory
 	memory datapath.Memory
 
 	// temp vars so dont have to repeat ops
 	adderOutput uint16
-
-	halted bool // if we've hit the trap instruction
-
-	logger slog.Logger
 }
 
 func (cpu *CPU) Init(pcStart uint16, instructions []uint16, logger slog.Logger) {
@@ -48,42 +44,33 @@ func (cpu *CPU) Init(pcStart uint16, instructions []uint16, logger slog.Logger) 
 }
 
 func (cpu *CPU) Run() {
-	// i := 0
+	cpu.profiler.StartTime = time.Now()
 	for !cpu.halted && cpu.pc.GetValue() < 0x301f {
 		cpu.Tick()
-		// cpu.PrintRegisterFile()
-		// log.Println("---------------------")
-		// fmt.Scanln()
+		cpu.profiler.TotalCycles++
 	}
+	cpu.profiler.EndTime = time.Now()
+	cpu.profiler.Report(cpu.logger, "HALTED (TRAP 0x25)")
 }
 
 func (cpu *CPU) Tick() {
+	// clock edge commits
+	cpu.pc.Commit()
+	cpu.ir.Commit()
+	cpu.registerFile.Commit()
+	cpu.mar.Commit()
+	cpu.mdr.Commit()
+	cpu.conditionalCodes.Commit()
 	cpu.memory.Commit()
 
 	if cpu.state == 18 || cpu.state == 19 {
-		// cpu.logger.Info(fmt.Sprintf("PC: %x", cpu.pc.GetValue()-2))
-		// // cpu.logger.Info(fmt.Sprintf("IR: %16b", cpu.ir.GetValue()))
-		// cpu.logger.Info(fmt.Sprintf("BEN: %v", cpu.calculateBen()))
-
-		cpu.logger.Info(fmt.Sprintf("R1: %d; R2: %d", int8(cpu.registerFile.GetRegisters()[1]), int8(cpu.registerFile.GetRegisters()[2])))
-		// cpu.logger.Info(fmt.Sprintf("Condition codes: N: %v, Z: %v, P: %v", cpu.conditionalCodes.N, cpu.conditionalCodes.Z, cpu.conditionalCodes.P))
+		cpu.profiler.InstructionCount++
 	}
 
-	// if cpu.state == 32 {
-	// 	cpu.logger.Info(fmt.Sprintf("IR: %16b", cpu.ir.GetValue()))
-	// }
-
-	// if cpu.state == 33 {
-	// 	cpu.logger.Info(fmt.Sprintf("MDR: %v", cpu.mdr))
-	// 	cpu.logger.Info(fmt.Sprintf("MEM: %v", cpu.memory.DataOut))
-
-	// }
-
-	if cpu.state == 30 {
-		cpu.logger.Info("Halting CPU due to TRAP instruction")
-		cpu.halted = true
-		return
+	if cpu.state == 32 {
+		cpu.printStep(cpu.ir.GetValue())
 	}
+
 	controlStoreOut := control.ControlStore(cpu.state)
 	signals := controlStoreOut.DatapathSignals
 
@@ -92,25 +79,30 @@ func (cpu *CPU) Tick() {
 	cpu.updateMemory(signals)
 	cpu.updateRegisters(signals)
 
-	// clock edge commits
-	cpu.pc.Commit()
-	cpu.ir.Commit()
-	cpu.registerFile.Commit()
-	cpu.mar.Commit()
-	cpu.mdr.Commit()
-	cpu.conditionalCodes.Commit()
+	if cpu.state == 30 {
+		cpu.logger.Info("Halting CPU due to TRAP instruction")
+		cpu.halted = true
+		cpu.printRegisterFile()
+		return
+	}
 
 	// calculate new state
-
 	ir15to11 := uint8((cpu.ir.GetValue() >> 11)) & 0b11111
-	cpu.state = control.Microsequencer(controlStoreOut.COND, cpu.calculateBen(), cpu.memory.Ready, ir15to11, controlStoreOut.J, controlStoreOut.IRD)
-	// cpu.logger.Info(fmt.Sprintf("New State: %d", cpu.state))
+	newState := control.Microsequencer(controlStoreOut.COND, cpu.calculateBen(), cpu.memory.Ready, ir15to11, controlStoreOut.J, controlStoreOut.IRD)
 
+	if cpu.state == 0 { // profiling branch conditions
+		if newState == 22 {
+			cpu.profiler.BranchesTaken++
+		} else {
+			cpu.profiler.BranchesNotTaken++
+		}
+	}
+
+	if cpu.state == 35 || cpu.state == 18 || cpu.state == 19 { // reset memory ready state on fetch step
+		cpu.memory.Ready = false
+	}
+	cpu.state = newState
 }
-
-// func (cpu *CPU) PrintRegisterFile() {
-// 	cpu.registerFile.PrintValues()
-// }
 
 func (cpu *CPU) computeCombinationalLogic(signals control.Signals) {
 	ir := cpu.ir.GetValue()
@@ -156,14 +148,10 @@ func (cpu *CPU) computeBus(signals control.Signals) uint16 {
 	}
 
 	if signals.GateALU == control.NoYesSig_YES {
-		// log.Println("ALU Gate opened")
 		enabledCounter += 1
 		sr1 := cpu.registerFile.Sr1Out
 		sr2 := datapath.SR2Mux(control.SR2Mux(0b100000&ir>>5 == 1), datapath.SEXT(0b11111&ir, 5), cpu.registerFile.Sr2Out)
-		// log.Println("SR2: ", sr2)
-		// log.Println("ALUK: ", signals.AluK)
 		bus = datapath.ALU(signals.AluK, sr1, sr2)
-		log.Println("Calculated BUS: ", bus)
 	}
 
 	if signals.GateMARMUX == control.NoYesSig_YES {
@@ -229,8 +217,20 @@ func (cpu *CPU) updateMemory(signals control.Signals) {
 				we0 = true
 				we1 = true
 			}
+
+			if cpu.memory.Ready && !cpu.memory.PendingWrite {
+				return
+			}
+			if !cpu.memory.PendingWrite {
+				cpu.profiler.MemWrites++
+			}
+			cpu.logger.Debug(fmt.Sprintf("MEMORY READY: %t", cpu.memory.Ready))
+			cpu.logger.Debug(fmt.Sprintf("Pending Write: %t", cpu.memory.PendingWrite))
 			cpu.memory.Write(mar, cpu.mdr.GetValue(), we0, we1)
 		} else {
+			if !cpu.memory.PendingRead {
+				cpu.profiler.MemReads++
+			}
 			cpu.memory.Read(mar)
 		}
 	}

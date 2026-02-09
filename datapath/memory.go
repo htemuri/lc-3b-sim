@@ -1,6 +1,8 @@
 package datapath
 
-import "log"
+import (
+	"log"
+)
 
 const MEMORY_READ_LATENCY = 2  // in clock cycles
 const MEMORY_WRITE_LATENCY = 5 // in clock cycles
@@ -16,7 +18,7 @@ type Memory struct {
 	readCycles  uint8 // simulated latency for reads
 	DataOut     uint16
 
-	pendingWrite bool
+	PendingWrite bool
 	writeCycles  uint8 // simulated latency for writes
 	writeEnable1 bool
 	writeEnable0 bool
@@ -47,10 +49,10 @@ func (m *Memory) Write(
 	writeEnable0,
 	writeEnable1 bool,
 ) {
-	if m.pendingWrite {
+	if m.PendingWrite {
 		return
 	}
-	m.pendingWrite = true
+	m.PendingWrite = true
 	m.mar = mar
 	m.writeCycles = MEMORY_WRITE_LATENCY
 	m.writeData = mdr
@@ -69,7 +71,7 @@ func (m *Memory) Commit() {
 			m.Ready = true
 		}
 	}
-	if m.pendingWrite {
+	if m.PendingWrite {
 		if m.writeCycles > 0 {
 			m.writeCycles--
 		} else {
@@ -82,7 +84,7 @@ func (m *Memory) Commit() {
 			} else if m.writeEnable0 { // if just WE0 enabled, write mdr[7:0] to mem[mar]
 				m.mem[m.mar] = uint8(m.writeData)
 			}
-			m.pendingWrite = false
+			m.PendingWrite = false
 			m.Ready = true
 		}
 	}
