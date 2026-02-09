@@ -111,9 +111,9 @@ BRANCHING:
 ### Data Path
 I created all the data path elements except for IO registers based on the microarchitecture below provided by the Patt and Patel book. I made all combinational elements like MUXs, shifter, extenders, and the ALU into Go functions, and I treated sequential elements like registers and memory write as how they do in reality - on the rising or falling edge of the clock. Reads on registers I treated as combinational.
 
-<center><img src="public/lc3b-microarch.png" alt="Diagram of an lc3b microarchitecture datapath" width="500"/></center>
+<div class="center-block"><img src="public/lc3b-microarch.png" alt="Diagram of an lc3b microarchitecture datapath" width="500"/></div>
 
 ### Finite State Machine (FSM)
 The "microcode" to model the FSM below provided by Patt and Patel Appendix C is implemented as a hashmap where key is the current microinstruction, and value is a struct that includes all the control signals and conditionals needed to determine the next microinstruction.
 
-<center><img src="public/lc3b-fsm.png" alt="Diagram of the lc3b finite state machine" width="500"/></center>
+<div class="center-block"><img src="public/lc3b-fsm.png" alt="Diagram of the lc3b finite state machine" width="500"/></div>
